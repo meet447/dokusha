@@ -5,15 +5,26 @@ import TopBar from '../components/TopBar';
 import MangaItem from '../components/MangaItem';
 import {fetchAndFormatData} from '../api/comick'
 
-const ExtentionScreen = ({ navigation }) => {
+const ExtentionScreen = ({ route, navigation }) => {
   const [data, setData] = useState([]);
+  const { item } = route.params;
+  console.log(route.params);
 
   useEffect(() => {
-    fetchAndFormatData('https://api.comick.io/chapter?lang=en&accept_erotic_content=true&page=1&device-memory=4&order=hot')
-      .then(newData => {
-        setData(newData);
-      });
-  }, []);
+    if (route.params?.itemId === 'comick') {
+      fetchAndFormatData('https://api.comick.io/chapter?lang=en&accept_erotic_content=true&page=1&device-memory=4&order=hot')
+        .then(newData => {
+          setData(newData);
+        });
+    }
+    else if (route.params?.itemId === 'mangadex') {
+      fetchAndFormatData('https://api.comick.io/chapter?lang=en&accept_erotic_content=true&page=1&device-memory=4&order=new')
+        .then(newData => {
+          setData(newData);
+        });
+    }
+  }, [route.params?.itemId]);
+
 
   const renderItem = ({ item }) => (
     <MangaItem item={item} onPress={() => navigation.navigate('Info', { item })} />

@@ -82,11 +82,9 @@ export async function infoManga(hid) {
 }
 
 export async function fetchImages(hid) {
-   try {
-    const url = "https://api.comick.io/chapter/" + hid + "/?tachiyomi=true";
+    const url = `https://api.comick.io/chapter/${hid}/?tachiyomi=true`;
 
-    const response = await fetch(url, {
-      headers: {
+    const headers = {
         'sec-ch-ua': '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
         'x-nextjs-data': '1',
         'sec-ch-ua-mobile': '?0',
@@ -95,27 +93,42 @@ export async function fetchImages(hid) {
         'baggage': 'sentry-environment=production,sentry-release=3c673cdcab1a4f27420d07d160289250b5edbdc1,sentry-public_key=275d2003b9c64216a438e1d0ca8acf33,sentry-trace_id=6040a110716b42dab5bab473e75a28de,sentry-sample_rate=0.05,sentry-transaction=%2Fcomic%2F%5Bslug%5D%2F%5Bchapter%5D,sentry-sampled=false',
         'sentry-trace': '6040a110716b42dab5bab473e75a28de-85d85857aedca1b0-0',
         'sec-ch-ua-platform': '"Windows"'
-      }
-    });
+    };
 
-    if (!response.ok) {
-      console.error('Network response was not ok', response.statusText);
-      return [];
-    }
+    try {
+        const response = await fetch(url, {
+            headers: headers
+        });
+        const data = await response.json();
 
-    const data = await response.json();
-    
-    // Check if the expected structure of the response exists
-    if (!data.chapter || !data.chapter.images || !Array.isArray(data.chapter.images)) {
-      console.error('Unexpected response structure or missing data');
-      return [];
+        const res = { 'images': [], 'prev': [], 'next': [] };
+
+        for (const item of data.chapter.images) {
+            res.images.push(item.url);
+        }
+
+        let n_chap = 'None', n_hid = 'None', p_chap = 'None', p_hid = 'None';
+
+        if (data.next) {
+            n_chap = data.next.chap;
+            n_hid = data.next.hid;
+        }
+
+        if (data.prev) {
+            p_chap = data.prev.chap;
+            p_hid = data.prev.hid;
+        }
+
+        const item1 = { "chap": n_chap, 'hid': n_hid };
+        const item2 = { "chap": p_chap, 'hid': p_hid };
+
+        res.next.push(item1);
+        res.prev.push(item2);
+        
+        console.log(res)
+        return res;
+    } catch (error) {
+        console.error(`Error fetching images: ${error}`);
+        return { 'images': [], 'prev': [], 'next': [] };
     }
-    console.log(data.chapter.images)
-    return data.chapter.images;
-  } catch (error) {
-    console.error('Failed to fetch images:', error);
-    return [];
-  }
 }
-
-

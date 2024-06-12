@@ -7,7 +7,7 @@ const TopBar = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Mangaka</Text>
+      <Text style={styles.title}>Dokusha</Text>
     </View>
   );
 };

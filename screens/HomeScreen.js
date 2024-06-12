@@ -3,25 +3,14 @@ import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet } from 'react
 import NavBar from '../components/NavBar';
 import TopBar from '../components/TopBar';
 import MangaItem from '../components/MangaItem';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DATA = [
-  {
-    id: '1',
-    title: 'Solo Leveling',
-    image: 'https://i.ytimg.com/vi/Agfy5slamJk/maxresdefault.jpg',
-  },
-  {
-    id: '2',
-    title: 'Kaguya-sama',
-    image: 'https://i.ytimg.com/vi/Agfy5slamJk/maxresdefault.jpg',
-  },
-  {
-    id: '3',
-    title: 'Kaguya-sama',
-    image: 'https://i.ytimg.com/vi/Agfy5slamJk/maxresdefault.jpg',
-  },
-  // Add more items as needed
 ];
+
+const library = AsyncStorage.getItem('library');
+console.log(library)
+
 
 const HomeScreen = ({ navigation }) => {
   const renderItem = ({ item }) => (
