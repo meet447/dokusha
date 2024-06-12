@@ -1,4 +1,5 @@
-# Dokusha - Reader App
+#![github-header-image](https://github.com/meet447/dokusha/assets/51074036/9fcbb45b-2aec-492d-bc7b-1794db31b57f)
+ Dokusha - Reader App
 
 Dokusha is a reader application designed to provide an immersive reading experience for manga, manhwa, and manhua enthusiasts. With support for various extensions, users can explore a vast collection of manga content from different sources conveniently.
 
