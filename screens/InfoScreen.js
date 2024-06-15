@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Button, FlatList, Alert } from 'react-native';
 import { infoManga } from '../api/comick';
+import { infoManga1 } from '../api/image/manga';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const InfoScreen = ({ route, navigation }) => {
   const { item } = route.params;
+  console.log(route.params)
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 

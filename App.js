@@ -7,6 +7,7 @@ import UpdateScreen from './screens/UpdatesScreen'
 import ExploreScreen from './screens/ExploreScreen' 
 import ExtentionScreen from './screens/ExtentionScreen';
 import ReadScreen from './screens/ReadScreen';
+import SearchScreen from './screens/SearchScreen';
 
 const Stack = createStackNavigator();
 
@@ -58,6 +59,15 @@ export default function App() {
         <Stack.Screen
           name="Read"
           component={ReadScreen}
+          options={{
+            title: '',
+            headerTransparent: true,
+            headerTintColor: '#fff',
+          }}
+        />
+        <Stack.Screen
+          name="Search"
+          component={SearchScreen}
           options={{
             title: '',
             headerTransparent: true,

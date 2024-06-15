@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Button, SafeAreaView, View, Text, Image, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
-import NavBar from '../components/NavBar';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Button, SafeAreaView, View, Text, Image, StyleSheet, ScrollView, Dimensions, TouchableOpacity, FlatList, useWindowDimensions } from 'react-native';
 import TopBar from '../components/TopBar';
 import { fetchImages } from '../api/comick'; // Assuming fetchImages function is correctly implemented
 import { useNavigation } from '@react-navigation/native';
@@ -9,14 +8,11 @@ const ReadScreen = ({ route }) => {
   const { chapter } = route.params;
   const { hid } = chapter;
   const navigation = useNavigation();
-
-  console.log(route.params);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   const [images, setImages] = useState([]);
   const [currentPanel, setCurrentPanel] = useState(0);
   const [isWebtoonMode, setIsWebtoonMode] = useState(false);
-  const screenWidth = Dimensions.get('window').width;
-  const screenHeight = Dimensions.get('window').height;
   const [nextChapterHid, setNextChapterHid] = useState(null);
   const [prevChapterHid, setPrevChapterHid] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,31 +23,23 @@ const ReadScreen = ({ route }) => {
   const webtoonModeWidth = useMemo(() => screenWidth, [screenWidth]);
   const webtoonModeHeight = useMemo(() => screenHeight * 0.8, [screenHeight]);
 
-  useEffect(() => {
-    const fetchChapterImages = async () => {
-      setLoading(true);
-      try {
-        const fetchedImages = await fetchImages(hid, isWebtoonMode ? webtoonModeWidth : slideModeWidth, isWebtoonMode ? webtoonModeHeight : slideModeHeight);
-        setImages(fetchedImages.images);
-        if (fetchedImages.next && fetchedImages.next.length > 0) {
-          setNextChapterHid(fetchedImages.next[0].hid);
-        } else {
-          setNextChapterHid(null);
-        }
-        if (fetchedImages.prev && fetchedImages.prev.length > 0) {
-          setPrevChapterHid(fetchedImages.prev[0].hid);
-        } else {
-          setPrevChapterHid(null);
-        }
-        setLoading(false);
-      } catch (error) {
-        setError(error.message);
-        setLoading(false);
-      }
-    };
+  const fetchChapterImages = useCallback(async () => {
+    setLoading(true);
+    try {
+      const fetchedImages = await fetchImages(hid, isWebtoonMode ? webtoonModeWidth : slideModeWidth, isWebtoonMode ? webtoonModeHeight : slideModeHeight);
+      setImages(fetchedImages.images);
+      setNextChapterHid(fetchedImages.next?.[0]?.hid || null);
+      setPrevChapterHid(fetchedImages.prev?.[0]?.hid || null);
+      setLoading(false);
+    } catch (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  }, [hid, isWebtoonMode, slideModeWidth, slideModeHeight, webtoonModeWidth, webtoonModeHeight]);
 
+  useEffect(() => {
     fetchChapterImages();
-  }, [hid, isWebtoonMode]);
+  }, [fetchChapterImages]);
 
   const goToNextChapter = () => {
     if (nextChapterHid) {
@@ -69,29 +57,37 @@ const ReadScreen = ({ route }) => {
     setIsWebtoonMode(!isWebtoonMode);
   };
 
+  const renderImage = ({ item }) => (
+    <Image source={{ uri: item }} style={isWebtoonMode ? styles.webtoonImage : styles.image} resizeMode="contain" />
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <TopBar />
       {loading ? (
         <Text style={styles.loadingText}>Loading...</Text>
       ) : error ? (
-        <Text style={styles.errorText}>{error}</Text>
+        <>
+          <Text style={styles.errorText}>{error}</Text>
+          <Button title="Retry" onPress={fetchChapterImages} />
+        </>
       ) : (
         <>
           {isWebtoonMode ? (
-            <ScrollView
-              style={styles.scrollView}
+            <FlatList
+              data={images}
+              renderItem={renderImage}
+              keyExtractor={(item, index) => index.toString()}
               showsVerticalScrollIndicator={false}
-            >
-              {images.map((url, index) => (
-                <Image key={index} source={{ uri: url }} style={styles.webtoonImage} resizeMode="contain" />
-              ))}
-            </ScrollView>
-          ) : (
-            <ScrollView
               style={styles.scrollView}
-              horizontal={true}
-              pagingEnabled={true}
+            />
+          ) : (
+            <FlatList
+              data={images}
+              renderItem={renderImage}
+              keyExtractor={(item, index) => index.toString()}
+              horizontal
+              pagingEnabled
               showsHorizontalScrollIndicator={false}
               onScroll={(event) => {
                 const { x } = event.nativeEvent.contentOffset;
@@ -99,11 +95,8 @@ const ReadScreen = ({ route }) => {
                 setCurrentPanel(panelIndex);
               }}
               scrollEventThrottle={200}
-            >
-              {images.map((url, index) => (
-                <Image key={index} source={{ uri: url }} style={styles.image} resizeMode="contain" />
-              ))}
-            </ScrollView>
+              style={styles.scrollView}
+            />
           )}
         </>
       )}
@@ -166,7 +159,7 @@ const styles = StyleSheet.create({
   controlText: {
     fontSize: 16,
     color: '#333',
-  }
+  },
 });
 
 export default ReadScreen;

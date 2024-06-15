@@ -4,9 +4,8 @@ import NavBar from '../components/NavBar';
 import TopBar from '../components/TopBar';
 import MangaItem from '../components/MangaItem';
 import {fetchAndFormatData} from '../api/comick'
-import { fetchAndFormatData1 } from '../api/image/manga';
 
-const ExtentionScreen = ({ route, navigation }) => {
+const SearchScreen = ({ route, navigation }) => {
   const [data, setData] = useState([]);
   const { item } = route.params;
   console.log(route.params);
@@ -18,8 +17,8 @@ const ExtentionScreen = ({ route, navigation }) => {
           setData(newData);
         });
     }
-    else{
-      fetchAndFormatData1(extention = route.params?.itemId, page = '1')
+    else if (route.params?.itemId === 'mangadex') {
+      fetchAndFormatData('https://api.comick.io/chapter?lang=en&accept_erotic_content=true&page=1&device-memory=4&order=new')
         .then(newData => {
           setData(newData);
         });
@@ -58,4 +57,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ExtentionScreen;
+export default SearchScreen;
