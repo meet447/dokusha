@@ -4,12 +4,14 @@ import NavBar from '../components/NavBar';
 import TopBar from '../components/TopBar';
 import MangaItem from '../components/MangaItem';
 import {fetchAndFormatData} from '../api/comick'
-import { fetchAndFormatData1 } from '../api/image/manga';
+import { fetchData } from '../api/image/manga';
 
 const ExtentionScreen = ({ route, navigation }) => {
   const [data, setData] = useState([]);
   const { item } = route.params;
   console.log(route.params);
+
+  const extenstion = route.params?.itemId;
 
   useEffect(() => {
     if (route.params?.itemId === 'comick') {
@@ -19,7 +21,7 @@ const ExtentionScreen = ({ route, navigation }) => {
         });
     }
     else{
-      fetchAndFormatData1(extention = route.params?.itemId, page = '1')
+      fetchData(extenstion, page = '1')
         .then(newData => {
           setData(newData);
         });
@@ -28,7 +30,7 @@ const ExtentionScreen = ({ route, navigation }) => {
 
 
   const renderItem = ({ item }) => (
-    <MangaItem item={item} onPress={() => navigation.navigate('Info', { item })} />
+    <MangaItem item={item} onPress={() => navigation.navigate('Info', { item, extenstion })} />
   );
 
   return (

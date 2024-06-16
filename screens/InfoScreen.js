@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Button, FlatList, Alert } from 'react-native';
 import { infoManga } from '../api/comick';
-import { infoManga1 } from '../api/image/manga';
+import { fetchInfo } from '../api/image/manga';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const InfoScreen = ({ route, navigation }) => {
@@ -9,13 +9,22 @@ const InfoScreen = ({ route, navigation }) => {
   console.log(route.params)
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
+  const extension = route.params.extenstion;
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if(extension === 'comick'){
         const newData = await infoManga(item.hid);
         setData(newData);
         setIsLoading(false);
+        }
+        else
+        {
+          const newData = await fetchInfo(extension, item.hid);
+          setData(newData);
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error('Error fetching manga info:', error);
         setIsLoading(false);
