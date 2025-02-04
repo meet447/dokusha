@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -7,25 +7,33 @@ import {
   Switch,
   ScrollView,
   Linking,
-  Alert 
+  Alert,
+  Modal,
+  TextInput,
+  Platform,
+  KeyboardAvoidingView
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
-import TopBar from '../components/TopBar';
-import NavBar from '../components/NavBar';
+import Layout from '../components/Layout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const APP_VERSION = '1.0.0';
 
 const SettingsScreen = () => {
+  const [showEndpointModal, setShowEndpointModal] = useState(false);
+  const [tempEndpoint, setTempEndpoint] = useState('');
+  
   const { 
     isDarkMode, 
     isDataSaver, 
     autoUpdate,
+    apiEndpoint,
     toggleDarkMode,
     toggleDataSaver,
-    toggleAutoUpdate
+    toggleAutoUpdate,
+    updateApiEndpoint
   } = useTheme();
 
   const clearCache = async () => {
@@ -51,6 +59,18 @@ const SettingsScreen = () => {
         { text: 'Clear', onPress: clearCache, style: 'destructive' }
       ]
     );
+  };
+
+  const handleEndpointUpdate = () => {
+    setTempEndpoint(apiEndpoint);
+    setShowEndpointModal(true);
+  };
+
+  const handleSaveEndpoint = () => {
+    if (tempEndpoint && tempEndpoint.trim()) {
+      updateApiEndpoint(tempEndpoint.trim());
+    }
+    setShowEndpointModal(false);
   };
 
   const renderSettingItem = ({ icon, title, subtitle, onPress, value, type = 'arrow' }) => (
@@ -84,9 +104,11 @@ const SettingsScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <TopBar />
-      <ScrollView style={styles.scrollView}>
+    <Layout>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+      >
         <Text style={styles.sectionTitle}>Appearance</Text>
         {renderSettingItem({
           icon: 'dark-mode',
@@ -123,6 +145,27 @@ const SettingsScreen = () => {
           onPress: confirmClearCache
         })}
 
+        <Text style={styles.sectionTitle}>Extensions</Text>
+        <TouchableOpacity 
+          style={styles.settingItem} 
+          onPress={handleEndpointUpdate}
+        >
+          <View style={styles.settingItemLeft}>
+            <MaterialIcons name="api" size={24} color={theme.colors.primary} />
+            <View style={styles.settingItemText}>
+              <Text style={styles.settingTitle}>API Endpoint</Text>
+              <Text style={styles.settingSubtitle}>
+                {apiEndpoint || 'Not set'}
+              </Text>
+            </View>
+          </View>
+          <MaterialIcons 
+            name="chevron-right" 
+            size={24} 
+            color={theme.colors.text.secondary} 
+          />
+        </TouchableOpacity>
+
         <Text style={styles.sectionTitle}>About</Text>
         {renderSettingItem({
           icon: 'info',
@@ -142,19 +185,60 @@ const SettingsScreen = () => {
           subtitle: 'Report bugs or request features',
           onPress: () => Linking.openURL('https://github.com/meet447/dokusha/issues')
         })}
+
+        {/* API Endpoint Modal */}
+        <Modal
+          visible={showEndpointModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowEndpointModal(false)}
+        >
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalContainer}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Update API Endpoint</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Enter API URL"
+                placeholderTextColor={theme.colors.text.secondary}
+                value={tempEndpoint}
+                onChangeText={setTempEndpoint}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={() => setShowEndpointModal(false)}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalButtonSave]}
+                  onPress={handleSaveEndpoint}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextSave]}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+
+        {/* Add some bottom padding to ensure last item is visible */}
+        <View style={styles.bottomPadding} />
       </ScrollView>
-      <NavBar />
-    </View>
+    </Layout>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
   scrollView: {
     flex: 1,
+  },
+  scrollViewContent: {
+    paddingBottom: 100, // Add padding at the bottom to prevent content from being hidden
   },
   sectionTitle: {
     fontSize: 14,
@@ -195,6 +279,58 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text.secondary,
     marginLeft: 8,
+  },
+  bottomPadding: {
+    height: 20, // Additional padding at the bottom
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 16,
+  },
+  modalInput: {
+    backgroundColor: theme.colors.background,
+    borderRadius: 8,
+    padding: 12,
+    color: theme.colors.text.primary,
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  modalButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  modalButtonCancel: {
+    backgroundColor: theme.colors.background,
+  },
+  modalButtonSave: {
+    backgroundColor: theme.colors.primary,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    color: theme.colors.text.primary,
+  },
+  modalButtonTextSave: {
+    color: '#fff',
   },
 });
 

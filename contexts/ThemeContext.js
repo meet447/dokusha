@@ -7,6 +7,7 @@ export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isDataSaver, setIsDataSaver] = useState(false);
   const [autoUpdate, setAutoUpdate] = useState(false);
+  const [apiEndpoint, setApiEndpoint] = useState('');
 
   useEffect(() => {
     loadSettings();
@@ -16,10 +17,11 @@ export const ThemeProvider = ({ children }) => {
     try {
       const settings = await AsyncStorage.getItem('settings');
       if (settings) {
-        const { darkMode, dataSaver, autoUpdate } = JSON.parse(settings);
+        const { darkMode, dataSaver, autoUpdate, apiEndpoint } = JSON.parse(settings);
         setIsDarkMode(darkMode ?? true);
         setIsDataSaver(dataSaver ?? false);
         setAutoUpdate(autoUpdate ?? false);
+        setApiEndpoint(apiEndpoint ?? '');
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -32,6 +34,16 @@ export const ThemeProvider = ({ children }) => {
     } catch (error) {
       console.error('Error saving settings:', error);
     }
+  };
+
+  const updateApiEndpoint = async (endpoint) => {
+    setApiEndpoint(endpoint);
+    await saveSettings({ 
+      darkMode: isDarkMode, 
+      dataSaver: isDataSaver, 
+      autoUpdate,
+      apiEndpoint: endpoint 
+    });
   };
 
   const toggleDarkMode = async () => {
@@ -57,9 +69,11 @@ export const ThemeProvider = ({ children }) => {
       isDarkMode,
       isDataSaver,
       autoUpdate,
+      apiEndpoint,
       toggleDarkMode,
       toggleDataSaver,
-      toggleAutoUpdate
+      toggleAutoUpdate,
+      updateApiEndpoint
     }}>
       {children}
     </ThemeContext.Provider>
