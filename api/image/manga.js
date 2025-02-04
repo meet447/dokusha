@@ -1,5 +1,13 @@
-export async function fetchData(extention, page) {
-  const apiUrl = `https://dokusha-extenstions.onrender.com/${extention}/fetch/data/${page}`;
+const cache = new Map();
+
+export async function fetchData(extension, page) {
+  const cacheKey = `${extension}_${page}`;
+  
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  const apiUrl = `https://dokusha-extenstions.onrender.com/${extension}/fetch/data/${page}`;
 
   try {
     const response = await fetch(apiUrl, {
@@ -13,15 +21,21 @@ export async function fetchData(extention, page) {
     }
 
     const data = await response.json();
+    cache.set(cacheKey, data);
+    
+    // Clear old cache entries if cache gets too large
+    if (cache.size > 100) {
+      const firstKey = cache.keys().next().value;
+      cache.delete(firstKey);
+    }
     
     return data;
   } catch (error) {
     console.error('Error fetching data:', error);
-    return []; // Return an empty array in case of error
+    return [];
   }
 }
 
- 
 export async function fetchInfo(extention, hid) {
   const apiUrl = `https://dokusha-extenstions.onrender.com/${extention}/fetch/info/${hid}`;
 

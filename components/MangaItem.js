@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Image, Text, StyleSheet } from 'react-native';
+import { theme } from '../constants/theme';
 
 const MangaItem = ({ item, onPress }) => (
   <TouchableOpacity style={styles.item} onPress={onPress}>
@@ -11,19 +12,26 @@ const MangaItem = ({ item, onPress }) => (
 const styles = StyleSheet.create({
   item: {
     flex: 1,
-    alignItems: 'center',
-    margin: 5,
+    margin: 4,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.card,
+    elevation: 2,
   },
   image: {
-    width: 100,
-    height: 150,
+    width: '100%',
+    aspectRatio: 0.7, // Maintain manga cover aspect ratio
     borderRadius: 8,
   },
   title: {
-    marginTop: 5,
+    padding: 8,
     fontSize: 12,
-    textAlign: 'center',
-    width: 100,
+    color: theme.colors.text.primary,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
 });
 
