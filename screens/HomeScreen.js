@@ -6,6 +6,7 @@ import MangaItem from '../components/MangaItem';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../constants/theme';
 import { MaterialIcons } from '@expo/vector-icons';
+import Layout from '../components/Layout';
 
 const HomeScreen = ({ navigation }) => {
   const [library, setLibrary] = useState([]);
@@ -51,8 +52,7 @@ const HomeScreen = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <TopBar />
+    <Layout>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Library</Text>
         <Text style={styles.headerSubtitle}>{library.length} manga</Text>
@@ -68,8 +68,7 @@ const HomeScreen = ({ navigation }) => {
         ]}
         ListEmptyComponent={ListEmptyComponent}
       />
-      <NavBar />
-    </View>
+    </Layout>
   );
 };
 

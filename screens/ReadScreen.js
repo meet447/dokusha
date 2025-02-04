@@ -16,6 +16,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
 import { fetchImages } from '../api/comick';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Layout from '../components/Layout';
+import OptimizedImage from '../components/OptimizedImage';
 
 const ReadScreen = ({ route, navigation }) => {
   const { chapter } = route.params;
@@ -179,7 +181,7 @@ const ReadScreen = ({ route, navigation }) => {
     },
   };
 
-  // Update the renderImage function to handle double pages
+  // Update the renderImage function
   const renderImage = ({ item, index }) => {
     const imageStyle = {
       ...getImageStyle(),
@@ -187,22 +189,23 @@ const ReadScreen = ({ route, navigation }) => {
     };
 
     if (readingMode === 'paged' && pageLayout === 'double' && index % 2 === 0) {
-      // Render two pages side by side
       return (
         <View style={dynamicStyles.doublePageContainer}>
           <Pressable onPress={toggleControls} style={{ flex: 1 }}>
-            <Image 
+            <OptimizedImage 
               source={{ uri: item }} 
               style={[dynamicStyles.doublePageImage, imageStyle]}
               resizeMode={fitMode === 'both' ? 'contain' : fitMode === 'width' ? 'cover' : 'contain'}
+              priority={index < 2 ? 'high' : 'normal'}
             />
           </Pressable>
           {index + 1 < images.length && (
             <Pressable onPress={toggleControls} style={{ flex: 1 }}>
-              <Image 
+              <OptimizedImage 
                 source={{ uri: images[index + 1] }} 
                 style={[dynamicStyles.doublePageImage, imageStyle]}
                 resizeMode={fitMode === 'both' ? 'contain' : fitMode === 'width' ? 'cover' : 'contain'}
+                priority={index < 2 ? 'high' : 'normal'}
               />
             </Pressable>
           )}
@@ -210,25 +213,16 @@ const ReadScreen = ({ route, navigation }) => {
       );
     }
 
-    if (readingMode === 'webtoon') {
-      return (
-        <Pressable onPress={toggleControls} style={styles.webtoonImageContainer}>
-          <Image 
-            source={{ uri: item }} 
-            style={[dynamicStyles.webtoonImage, imageStyle]}
-            resizeMode="contain"
-          />
-        </Pressable>
-      );
-    }
-
-    // Single page rendering
     return (
-      <Pressable onPress={toggleControls}>
-        <Image 
+      <Pressable onPress={toggleControls} style={{ flex: 1 }}>
+        <OptimizedImage 
           source={{ uri: item }} 
-          style={[isWebtoonMode ? dynamicStyles.webtoonImage : dynamicStyles.image, imageStyle]}
+          style={[
+            readingMode === 'webtoon' ? dynamicStyles.webtoonImage : dynamicStyles.image,
+            imageStyle
+          ]}
           resizeMode={fitMode === 'both' ? 'contain' : fitMode === 'width' ? 'cover' : 'contain'}
+          priority={index < 2 ? 'high' : 'normal'}
         />
       </Pressable>
     );
@@ -252,7 +246,7 @@ const ReadScreen = ({ route, navigation }) => {
   }, [chapter]);
 
   return (
-    <View style={[styles.container, { backgroundColor }]}>
+    <Layout showTopBar={false} showNavBar={false}>
       {/* Top Controls */}
       {showControls && (
         <View style={styles.topControls}>
@@ -279,14 +273,14 @@ const ReadScreen = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
-          data={images}
-          renderItem={renderImage}
+            <FlatList
+              data={images}
+              renderItem={renderImage}
           keyExtractor={(_, index) => String(index)}
           horizontal={readingMode === 'paged'}
           pagingEnabled={readingMode === 'paged'}
           showsHorizontalScrollIndicator={false}
-          showsVerticalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
           scrollEnabled={true}
           windowSize={3}
           maxToRenderPerBatch={2}
@@ -518,7 +512,7 @@ const ReadScreen = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
-    </View>
+    </Layout>
   );
 };
 

@@ -5,6 +5,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
 import TopBar from '../components/TopBar';
 import NavBar from '../components/NavBar';
+import Layout from '../components/Layout';
+import { commonStyles } from '../styles/common';
 
 const HistoryScreen = ({ navigation }) => {
   const [history, setHistory] = useState([]);
@@ -58,11 +60,12 @@ const HistoryScreen = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <TopBar />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>History</Text>
-        <Text style={styles.headerSubtitle}>Recently read manga</Text>
+    <Layout>
+      <View style={commonStyles.header}>
+        <Text style={commonStyles.headerTitle}>History</Text>
+        <Text style={commonStyles.headerSubtitle}>
+          {history.length} items
+        </Text>
       </View>
       <FlatList
         data={history}
@@ -71,8 +74,7 @@ const HistoryScreen = ({ navigation }) => {
         contentContainerStyle={[styles.list, history.length === 0 && styles.emptyList]}
         ListEmptyComponent={ListEmptyComponent}
       />
-      <NavBar />
-    </View>
+    </Layout>
   );
 };
 

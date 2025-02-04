@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import TopBar from '../components/TopBar';
 import NavBar from '../components/NavBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,13 +19,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const APP_VERSION = '1.0.0';
 
 const SettingsScreen = () => {
-  const [darkMode, setDarkMode] = useState(true);
-  const [autoUpdate, setAutoUpdate] = useState(false);
-  const [dataSaver, setDataSaver] = useState(false);
+  const { 
+    isDarkMode, 
+    isDataSaver, 
+    autoUpdate,
+    toggleDarkMode,
+    toggleDataSaver,
+    toggleAutoUpdate
+  } = useTheme();
 
   const clearCache = async () => {
     try {
+      // Keep settings when clearing cache
+      const settings = await AsyncStorage.getItem('settings');
       await AsyncStorage.clear();
+      if (settings) {
+        await AsyncStorage.setItem('settings', settings);
+      }
       Alert.alert('Success', 'Cache cleared successfully');
     } catch (error) {
       Alert.alert('Error', 'Failed to clear cache');
@@ -36,15 +47,8 @@ const SettingsScreen = () => {
       'Clear Cache',
       'This will clear all cached data including your library and reading history. Are you sure?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Clear',
-          onPress: clearCache,
-          style: 'destructive',
-        },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear', onPress: clearCache, style: 'destructive' }
       ]
     );
   };
@@ -88,8 +92,8 @@ const SettingsScreen = () => {
           icon: 'dark-mode',
           title: 'Dark Mode',
           subtitle: 'Toggle dark/light theme',
-          onPress: () => setDarkMode(!darkMode),
-          value: darkMode,
+          onPress: toggleDarkMode,
+          value: isDarkMode,
           type: 'switch'
         })}
 
@@ -98,15 +102,15 @@ const SettingsScreen = () => {
           icon: 'save-alt',
           title: 'Data Saver',
           subtitle: 'Load lower quality images',
-          onPress: () => setDataSaver(!dataSaver),
-          value: dataSaver,
+          onPress: toggleDataSaver,
+          value: isDataSaver,
           type: 'switch'
         })}
         {renderSettingItem({
           icon: 'update',
           title: 'Auto Update Library',
           subtitle: 'Check for new chapters automatically',
-          onPress: () => setAutoUpdate(!autoUpdate),
+          onPress: toggleAutoUpdate,
           value: autoUpdate,
           type: 'switch'
         })}
@@ -130,13 +134,13 @@ const SettingsScreen = () => {
           icon: 'code',
           title: 'GitHub',
           subtitle: 'View source code',
-          onPress: () => Linking.openURL('https://github.com/yourusername/yourrepo')
+          onPress: () => Linking.openURL('https://github.com/meet447/dokusha')
         })}
         {renderSettingItem({
           icon: 'bug-report',
           title: 'Report Issue',
           subtitle: 'Report bugs or request features',
-          onPress: () => Linking.openURL('https://github.com/yourusername/yourrepo/issues')
+          onPress: () => Linking.openURL('https://github.com/meet447/dokusha/issues')
         })}
       </ScrollView>
       <NavBar />

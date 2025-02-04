@@ -66,6 +66,13 @@ const InfoScreen = ({ route, navigation }) => {
           return;
         }
 
+        // Save current chapters data
+        const chaptersData = await AsyncStorage.getItem('mangaChapters');
+        const mangaChapters = chaptersData ? JSON.parse(chaptersData) : {};
+        mangaChapters[item.hid] = data; // data contains the chapters
+
+        await AsyncStorage.setItem('mangaChapters', JSON.stringify(mangaChapters));
+
         library.push({
           ...item,
           addedAt: new Date().toISOString(),

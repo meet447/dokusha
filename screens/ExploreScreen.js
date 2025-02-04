@@ -12,14 +12,7 @@ const SOURCES = [
     description: 'Read manga from ComicK',
     icon: 'collections-bookmark',
     language: 'Multi-Language'
-  },
-  {
-    id: 'mangadex',
-    name: 'MangaDex',
-    description: 'Read manga from MangaDex',
-    icon: 'menu-book',
-    language: 'Multi-Language'
-  },
+  }
   // Add more sources as needed
 ];
 

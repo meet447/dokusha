@@ -132,3 +132,80 @@ export async function fetchImages(hid) {
         return { 'images': [], 'prev': [], 'next': [] };
     }
 }
+
+// Add this function to fetch chapters for a manga
+export const fetchChapters = async (hid) => {
+  try {
+    const apiUrl = `https://api.comick.io/comic/${hid}/chapters?lang=en&page=1`;
+    const response = await fetch(apiUrl, {
+      headers: {
+        'sec-ch-ua': '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+        'Referer': 'https://comick.io/',
+        'sec-ch-ua-mobile': '?0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'sec-ch-ua-platform': '"Windows"'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    
+    if (!data.chapters || !Array.isArray(data.chapters)) {
+      return [];
+    }
+
+    return data.chapters.map(chapter => ({
+      id: chapter.id,
+      hid: chapter.hid,
+      title: chapter.title,
+      chap: chapter.chap,
+    }));
+  } catch (error) {
+    console.error('Error fetching chapters:', error);
+    return [];
+  }
+};
+
+// Add this new search function
+export async function searchManga(query) {
+  try {
+    const apiUrl = `https://api.comick.io/v1.0/search?q=${encodeURIComponent(query)}&t=true`;
+    const response = await fetch(apiUrl, {
+      headers: {
+        'sec-ch-ua': '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+        'Referer': 'https://comick.io/',
+        'sec-ch-ua-mobile': '?0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'sec-ch-ua-platform': '"Windows"'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    
+    // Filter out items without necessary data and map to consistent format
+    return data
+      .filter(item => item && item.md_covers && item.md_covers[0] && item.md_covers[0].b2key)
+      .map(item => ({
+        id: item.id || '',
+        hid: item.hid || '',
+        title: item.title || 'Unknown Title',
+        image: item.md_covers[0].b2key ? 
+          `https://meo2.comick.pictures/${item.md_covers[0].b2key}` : 
+          'https://placeholder.com/150x200',
+        slug: item.slug || '',
+        altTitles: (item.md_titles || [])
+          .filter(t => t && t.title)
+          .map(t => t.title)
+      }));
+  } catch (error) {
+    console.error('Error searching manga:', error);
+    return [];
+  }
+}
