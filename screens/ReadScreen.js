@@ -47,14 +47,18 @@ const ReadScreen = ({ route, navigation }) => {
 
   const fetchChapterImages = useCallback(async () => {
     setLoading(true);
+    setError(null); // Reset error state
     try {
       const fetchedImages = await fetchImages(hid, isWebtoonMode ? webtoonModeWidth : slideModeWidth, isWebtoonMode ? webtoonModeHeight : slideModeHeight);
+      if (!fetchedImages || !fetchedImages.images || fetchedImages.images.length === 0) {
+        throw new Error('No images found');
+      }
       setImages(fetchedImages.images);
       setNextChapterHid(fetchedImages.next?.[0]?.hid || null);
       setPrevChapterHid(fetchedImages.prev?.[0]?.hid || null);
-      setLoading(false);
     } catch (error) {
-      setError(error.message);
+      setError(error.toString());
+    } finally {
       setLoading(false);
     }
   }, [hid, isWebtoonMode, slideModeWidth, slideModeHeight, webtoonModeWidth, webtoonModeHeight]);
@@ -183,6 +187,14 @@ const ReadScreen = ({ route, navigation }) => {
 
   // Update the renderImage function
   const renderImage = ({ item, index }) => {
+    if (!item) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load image</Text>
+        </View>
+      );
+    }
+
     const imageStyle = {
       ...getImageStyle(),
       transform: [{ scale: zoomLevel }]
@@ -252,9 +264,12 @@ const ReadScreen = ({ route, navigation }) => {
         <View style={styles.topControls}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.controlButton}>
             <MaterialIcons name="arrow-back" size={24} color={theme.colors.text.primary} />
+            <Text style={styles.controlText}>Back</Text>
           </TouchableOpacity>
-          <Text style={styles.chapterInfo}>Chapter {chapter.chap}</Text>
-          <View style={styles.controlButton} /> {/* Empty view for flex spacing */}
+          {chapter && (
+            <Text style={styles.chapterInfo}>Chapter {chapter.chap}</Text>
+          )}
+          <View style={styles.controlButton} />
         </View>
       )}
 
@@ -262,7 +277,7 @@ const ReadScreen = ({ route, navigation }) => {
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading chapter...</Text>
+          <Text style={styles.statusText}>Loading chapter...</Text>
         </View>
       ) : error ? (
         <View style={styles.centerContainer}>
@@ -276,66 +291,59 @@ const ReadScreen = ({ route, navigation }) => {
             <FlatList
               data={images}
               renderItem={renderImage}
-          keyExtractor={(_, index) => String(index)}
-          horizontal={readingMode === 'paged'}
-          pagingEnabled={readingMode === 'paged'}
-          showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, index) => `image-${index}`}
+              horizontal={readingMode === 'paged'}
+              pagingEnabled={readingMode === 'paged'}
+              showsHorizontalScrollIndicator={false}
               showsVerticalScrollIndicator={false}
-          scrollEnabled={true}
-          windowSize={3}
-          maxToRenderPerBatch={2}
-          initialNumToRender={1}
-          onViewableItemsChanged={({viewableItems}) => {
-            if (viewableItems.length > 0) {
-              setCurrentPanel(viewableItems[0].index);
-              preloadImages(images);
-            }
-          }}
-          viewabilityConfig={{
-            itemVisiblePercentThreshold: 50
-          }}
-          style={[
-            styles.scrollView,
-            readingMode === 'webtoon' && styles.webtoonScrollView,
-          ]}
-          contentContainerStyle={[
-            readingMode === 'webtoon' && {
-              paddingBottom: 80,
-              gap: 0,
-            }
-          ]}
-          inverted={readingDirection === 'rtl' && readingMode === 'paged'}
-          ItemSeparatorComponent={null}
-        />
+              scrollEnabled={true}
+              windowSize={3}
+              maxToRenderPerBatch={2}
+              initialNumToRender={1}
+              onViewableItemsChanged={({viewableItems}) => {
+                if (viewableItems.length > 0) {
+                  setCurrentPanel(viewableItems[0].index);
+                  preloadImages(images);
+                }
+              }}
+              viewabilityConfig={{
+                itemVisiblePercentThreshold: 50
+              }}
+              style={[
+                styles.scrollView,
+                readingMode === 'webtoon' && styles.webtoonScrollView,
+              ]}
+              contentContainerStyle={[
+                readingMode === 'webtoon' && {
+                  paddingBottom: 80,
+                  gap: 0,
+                }
+              ]}
+              inverted={readingDirection === 'rtl' && readingMode === 'paged'}
+              ItemSeparatorComponent={null}
+            />
       )}
 
       {/* Bottom Controls */}
       {showControls && (
         <View style={styles.bottomControlsContainer}>
           <View style={styles.bottomControls}>
-            <TouchableOpacity 
-              onPress={goToPreviousChapter} 
-              style={[styles.navButton, !prevChapterHid && styles.navButtonDisabled]}
-              disabled={!prevChapterHid}
-            >
-              <MaterialIcons name="skip-previous" size={24} color={theme.colors.text.primary} />
-              <Text style={styles.navButtonText}>Previous</Text>
-            </TouchableOpacity>
-            
-            <Text style={styles.pageInfo}>
-              <Text>{currentPanel + 1}</Text>
-              <Text> / </Text>
-              <Text>{images.length}</Text>
-            </Text>
-            
-            <TouchableOpacity 
-              onPress={goToNextChapter}
-              style={[styles.navButton, !nextChapterHid && styles.navButtonDisabled]}
-              disabled={!nextChapterHid}
-            >
-              <Text style={styles.navButtonText}>Next</Text>
-              <MaterialIcons name="skip-next" size={24} color={theme.colors.text.primary} />
-            </TouchableOpacity>
+            {prevChapterHid && (
+              <TouchableOpacity 
+                style={styles.chapterButton} 
+                onPress={() => goToPreviousChapter()}
+              >
+                <Text style={styles.chapterButtonText}>Previous Chapter</Text>
+              </TouchableOpacity>
+            )}
+            {nextChapterHid && (
+              <TouchableOpacity 
+                style={styles.chapterButton} 
+                onPress={() => goToNextChapter()}
+              >
+                <Text style={styles.chapterButtonText}>Next Chapter</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <TouchableOpacity 
@@ -525,6 +533,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   topControls: {
     position: 'absolute',
@@ -545,6 +554,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingBottom: 8,
   },
   bottomControls: {
     flexDirection: 'row',
@@ -561,23 +571,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  navButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: theme.colors.primary,
-  },
-  navButtonDisabled: {
-    opacity: 0.5,
-    backgroundColor: theme.colors.surface,
-  },
-  navButtonText: {
+  controlText: {
+    marginLeft: 8,
+    fontSize: 16,
     color: theme.colors.text.primary,
-    marginHorizontal: 4,
-    fontSize: 14,
-    fontWeight: '600',
   },
   chapterInfo: {
     color: theme.colors.text.primary,
@@ -680,6 +677,48 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     marginBottom: 8,
     elevation: 2,
+  },
+  statusText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  chapterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  chapterButtonText: {
+    color: theme.colors.text.primary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

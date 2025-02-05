@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mangaka",
-    "slug": "mangaka",
+    "name": "dokusha",
+    "slug": "dokusha",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -16,17 +16,17 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.maouu44.dokusha"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "31aea73e-983c-4459-a64d-e2848586781b"
+        "projectId": "877e56e2-cceb-444a-809c-08c60fe2791a"
       }
     }
   }
