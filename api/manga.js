@@ -3,6 +3,7 @@ const imageCache = new Map();
 const MAX_CACHE_SIZE = 100;
 
 const apiEndpoint = 'https://dokusha-extenstions.onrender.com';
+const backupapiEndpoint = 'https://dokusha-extenstions.vercel.app';
 
 // API Base URL
 const API_BASE_URL = apiEndpoint + '/extensions';
@@ -168,27 +169,50 @@ export async function fetchInfo(extension, hid) {
 }
 
 async function fetchComickInfo(hid) {
-  const apiUrl = `https://api.comick.io/comic/${hid}/chapters?lang=en&page=1`;
-  
-  try {
-    const response = await fetch(apiUrl, { headers: comickHeaders });
-    if (!response.ok) throw new Error('Network response was not ok');
+  let page = 1;
+  let result = [];
+  let apiUrl = `https://api.comick.io/comic/${hid}/chapters?lang=en&page=${page}`;
 
-    const data = await response.json();
-    if (!data.chapters || !Array.isArray(data.chapters)) {
-      return [];
+  const fetchData = async () => {
+    while (true) {
+      console.log(apiUrl);
+
+      try {
+        const response = await fetch(apiUrl, { headers: comickHeaders });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data.chapters)) {
+          throw new Error("Data is not an array");
+        }
+
+        if (data.chapters.length === 0) {
+          return result; // Return accumulated result if no more data available
+        }
+
+        const formattedData = data.chapters.map(item => ({
+          id: item.id,
+          hid: item.hid,
+          title: item.title,
+          chap: item.chap,
+        }));
+
+        result.push(...formattedData);
+
+        page++;
+        apiUrl = `https://api.comick.io/comic/${hid}/chapters?lang=en&page=${page}`;
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        return result; // Returning accumulated result in case of an error
+      }
     }
+  };
 
-    return data.chapters.map(chapter => ({
-      id: chapter.id,
-      hid: chapter.hid,
-      title: chapter.title || '',
-      chap: chapter.chap,
-    }));
-  } catch (error) {
-    console.error('Error fetching ComicK info:', error);
-    throw error;
-  }
+  return fetchData();
 }
 
 export async function fetchImages(extension, hid) {
