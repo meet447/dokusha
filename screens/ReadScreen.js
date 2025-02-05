@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
-import { fetchImages } from '../api/comick';
+import { fetchImages } from '../api/manga';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Layout from '../components/Layout';
 import OptimizedImage from '../components/OptimizedImage';
@@ -45,23 +45,30 @@ const ReadScreen = ({ route, navigation }) => {
   const webtoonModeWidth = useMemo(() => screenWidth, [screenWidth]);
   const webtoonModeHeight = useMemo(() => screenHeight * 0.8, [screenHeight]);
 
+  const extension = route.params?.manga?.extension ?? route.params.chapter.extension;
+  console.log("extension",extension);
+
   const fetchChapterImages = useCallback(async () => {
     setLoading(true);
     setError(null); // Reset error state
     try {
-      const fetchedImages = await fetchImages(hid, isWebtoonMode ? webtoonModeWidth : slideModeWidth, isWebtoonMode ? webtoonModeHeight : slideModeHeight);
+      // Use single fetchImages function for all extensions
+      const fetchedImages = await fetchImages(extension, hid);
+
       if (!fetchedImages || !fetchedImages.images || fetchedImages.images.length === 0) {
         throw new Error('No images found');
       }
+      
       setImages(fetchedImages.images);
       setNextChapterHid(fetchedImages.next?.[0]?.hid || null);
       setPrevChapterHid(fetchedImages.prev?.[0]?.hid || null);
     } catch (error) {
+      console.error('Error fetching images:', error);
       setError(error.toString());
     } finally {
       setLoading(false);
     }
-  }, [hid, isWebtoonMode, slideModeWidth, slideModeHeight, webtoonModeWidth, webtoonModeHeight]);
+  }, [hid, extension]);
 
   useEffect(() => {
     fetchChapterImages();
@@ -81,16 +88,24 @@ const ReadScreen = ({ route, navigation }) => {
     try {
       const existingHistory = await AsyncStorage.getItem('history');
       const history = existingHistory ? JSON.parse(existingHistory) : [];
+      const manga = route.params.manga;
 
       const historyEntry = {
-        manga: route.params.manga, // Make sure to pass manga info in navigation params
-        chapter: chapterToAdd,
+        manga: {
+          ...manga,
+          cover: manga.image, // Save the cover image
+          extension: manga.extension
+        },
+        chapter: {
+          ...chapterToAdd,
+          extension: manga.extension
+        },
         timestamp: new Date().toISOString()
       };
 
       // Remove any existing entries for the same manga
       const filteredHistory = history.filter(
-        entry => entry.manga.hid !== route.params.manga.hid
+        entry => entry.manga.hid !== manga.hid
       );
 
       // Add new entry at the beginning

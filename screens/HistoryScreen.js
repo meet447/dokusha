@@ -36,18 +36,30 @@ const HistoryScreen = ({ navigation }) => {
   const renderItem = ({ item }) => (
     <TouchableOpacity 
       style={styles.historyItem}
-      onPress={() => navigation.navigate('Read', { chapter: item.chapter })}
+      onPress={() => navigation.navigate('Read', { 
+        chapter: item.chapter,
+        manga: item.manga 
+      })}
     >
-      <Image source={{ uri: item.manga.image }} style={styles.mangaImage} />
+      <Image 
+        source={{ uri: item.manga.cover }}
+        style={styles.mangaImage} 
+      />
       <View style={styles.infoContainer}>
-        <Text style={styles.mangaTitle} numberOfLines={1}>{item.manga.title}</Text>
+        <Text style={styles.mangaTitle} numberOfLines={1}>
+          {item.manga.title}
+        </Text>
         <Text style={styles.chapterInfo}>
           Chapter {item.chapter.chap}
           {item.chapter.title && ` - ${item.chapter.title}`}
         </Text>
         <Text style={styles.timestamp}>{formatDate(item.timestamp)}</Text>
       </View>
-      <MaterialIcons name="chevron-right" size={24} color={theme.colors.text.secondary} />
+      <MaterialIcons 
+        name="chevron-right" 
+        size={24} 
+        color={theme.colors.text.secondary} 
+      />
     </TouchableOpacity>
   );
 

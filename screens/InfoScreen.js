@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator } from 'react-native';
-import { infoManga } from '../api/comick';
-import { fetchInfo } from '../api/image/manga';
+import { fetchInfo } from '../api/manga';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../constants/theme';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -28,15 +27,10 @@ const InfoScreen = ({ route, navigation }) => {
 
     const fetchData = async () => {
       try {
-        if(extension === 'comick'){
-          const newData = await infoManga(item.hid);
-          setData(newData);
-          setIsLoading(false);
-        } else {
-          const newData = await fetchInfo(extension, item.hid);
-          setData(newData);
-          setIsLoading(false);
-        }
+        // Use fetchInfo for both ComicK and other extensions
+        const newData = await fetchInfo(extension, item.hid);
+        setData(newData);
+        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching manga info:', error);
         setIsLoading(false);
@@ -46,7 +40,7 @@ const InfoScreen = ({ route, navigation }) => {
 
     checkLibraryStatus();
     fetchData();
-  }, []);
+  }, [extension, item.hid]);
 
   const toggleLibrary = async () => {
     try {
@@ -91,24 +85,27 @@ const InfoScreen = ({ route, navigation }) => {
 
   const handleStartReading = async () => {
     try {
-      // Get first chapter - data is already the chapters array
-      const firstChapter = data[data.length - 1]; // Get the last item since chapters are in reverse order
+      const firstChapter = data[data.length - 1];
       
       if (!firstChapter) {
         Alert.alert('Error', 'No chapters available');
         return;
       }
 
-      // Add to history
+      // Add to history with extension info and cover
       const existingHistory = await AsyncStorage.getItem('history');
       const history = existingHistory ? JSON.parse(existingHistory) : [];
 
       const historyEntry = {
         manga: {
           ...item,
+          extension: extension,
+          cover: item.image // Save the cover image
+        },
+        chapter: {
+          ...firstChapter,
           extension: extension
         },
-        chapter: firstChapter,
         timestamp: new Date().toISOString()
       };
 
@@ -126,9 +123,12 @@ const InfoScreen = ({ route, navigation }) => {
       // Save updated history
       await AsyncStorage.setItem('history', JSON.stringify(trimmedHistory));
 
-      // Navigate to read screen with manga info
+      // Navigate to read screen with manga and extension info
       navigation.navigate('Read', { 
-        chapter: firstChapter,
+        chapter: {
+          ...firstChapter,
+          extension: extension
+        },
         manga: {
           ...item,
           extension: extension
@@ -184,17 +184,29 @@ const InfoScreen = ({ route, navigation }) => {
   };
 
   const ChapterItem = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.chapterItem}
-      onPress={() => handleChapterPress(item)}
+      onPress={() => navigation.navigate('Read', {
+        chapter: {
+          ...item,
+          extension: extension // Add extension to chapter data
+        },
+        manga: {
+          ...item,
+          extension: extension // Add extension to manga data
+        }
+      })}
     >
       <View style={styles.chapterInfo}>
-        <Text style={styles.chapterNumber}>Chapter {item.chap}</Text>
-        <Text style={styles.chapterTitle} numberOfLines={1}>
-          {item.title || `Chapter ${item.chap}`}
+        <Text style={styles.chapterNumber}>
+          {item.chap}
         </Text>
+        {item.title && (
+          <Text style={styles.chapterTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+        )}
       </View>
-      <MaterialIcons name="chevron-right" size={24} color={theme.colors.text.secondary} />
     </TouchableOpacity>
   );
 

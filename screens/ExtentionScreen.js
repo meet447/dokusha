@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import MangaItem from '../components/MangaItem';
-import { fetchAndFormatData } from '../api/comick';
-import { fetchData } from '../api/image/manga';
-import { theme } from '../constants/theme';
+import { fetchData, searchManga } from '../api/manga';
 import { MaterialIcons } from '@expo/vector-icons';
-import { searchManga } from '../api/comick';
 import { debounce } from 'lodash';
 import Layout from '../components/Layout';
+import { theme } from '../constants/theme';
 
 const ExtentionScreen = ({ route, navigation }) => {
   const [data, setData] = useState([]);
@@ -18,21 +16,16 @@ const ExtentionScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     setLoading(true);
-    if (itemId === 'comick') {
-      fetchAndFormatData('https://api.comick.io/chapter?lang=en&accept_erotic_content=true&page=1&device-memory=4&order=hot')
-        .then(newData => {
-          setData(newData);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    } else {
-      fetchData(extenstion, page = '1')
-        .then(newData => {
-          setData(newData);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    }
+    // Use fetchData for both ComicK and other extensions
+    fetchData(extenstion, '1')
+      .then(newData => {
+        setData(newData);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+      });
   }, [itemId]);
 
   // Handle search
@@ -40,18 +33,18 @@ const ExtentionScreen = ({ route, navigation }) => {
     debounce(async (searchQuery) => {
       if (searchQuery.trim().length < 2) {
         // Reset to initial data if search query is cleared
-        if (itemId === 'comick') {
-          fetchAndFormatData('https://api.comick.io/chapter?lang=en&accept_erotic_content=true&page=1&device-memory=4&order=hot')
-            .then(newData => {
-              setData(newData);
-            });
-        }
+        fetchData(extenstion, '1')
+          .then(newData => {
+            setData(newData);
+          })
+          .catch(error => console.error('Error fetching data:', error));
         return;
       }
 
       setLoading(true);
       try {
-        const searchResults = await searchManga(searchQuery);
+        // Pass the extension to searchManga
+        const searchResults = await searchManga(searchQuery, extenstion);
         setData(searchResults);
       } catch (error) {
         console.error('Search error:', error);
@@ -59,7 +52,7 @@ const ExtentionScreen = ({ route, navigation }) => {
         setLoading(false);
       }
     }, 500),
-    [itemId]
+    [extenstion]
   );
 
   const handleSearch = (text) => {

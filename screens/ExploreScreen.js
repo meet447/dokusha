@@ -10,21 +10,22 @@ const ExploreScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { apiEndpoint } = useTheme();
+  const newapiEndpoint = apiEndpoint + '/extensions';
 
   useEffect(() => {
     fetchSources();
-  }, [apiEndpoint]);
+  }, [newapiEndpoint]);
 
   const fetchSources = async () => {
     setLoading(true);
     setError(null);
     try {
-      if (!apiEndpoint) {
+      if (!newapiEndpoint) {
         setSources([]);
         return;
       }
 
-      const response = await fetch(apiEndpoint);
+      const response = await fetch(newapiEndpoint);
       const data = await response.json();
 
       // Validate the response data structure

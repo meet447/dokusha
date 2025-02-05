@@ -14,35 +14,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../constants/theme';
 import TopBar from '../components/TopBar';
 import NavBar from '../components/NavBar';
-import { fetchChapters } from '../api/comick';
-import { fetchInfo } from '../api/image/manga';
+import { fetchInfo } from '../api/manga';
 import Layout from '../components/Layout';
-// OR if using a different extension:
-// import { fetchChapters } from '../api/image/manga';  // Depending on which API you're using
 
 const UpdatesScreen = ({ navigation }) => {
   const [updates, setUpdates] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastChecked, setLastChecked] = useState(null);
-
-  useEffect(() => {
-    loadUpdates();
-  }, []);
-
-  const loadUpdates = async () => {
-    try {
-      const savedUpdates = await AsyncStorage.getItem('updates');
-      if (savedUpdates) {
-        setUpdates(JSON.parse(savedUpdates));
-      }
-      const lastCheck = await AsyncStorage.getItem('lastUpdateCheck');
-      if (lastCheck) {
-        setLastChecked(new Date(JSON.parse(lastCheck)));
-      }
-    } catch (error) {
-      console.error('Error loading updates:', error);
-    }
-  };
 
   const checkForUpdates = async () => {
     setRefreshing(true);
@@ -65,64 +42,103 @@ const UpdatesScreen = ({ navigation }) => {
 
       // Check each manga in library
       for (const manga of library) {
-        let latestChapters;
-        
-        // Use appropriate API based on extension
-        if (manga.extension === 'comick') {
-          latestChapters = await fetchChapters(manga.hid);
-        } else {
-          // For other extensions, use the manga API
-          latestChapters = await fetchInfo(manga.extension, manga.hid);
-        }
-        
-        // If no saved chapters, save current chapters and continue
-        if (!mangaChapters[manga.hid]) {
+        try {
+          // Use fetchInfo for all extensions
+          const latestChapters = await fetchInfo(manga.extension, manga.hid);
+          
+          // If no saved chapters, save current chapters and continue
+          if (!mangaChapters[manga.hid]) {
+            mangaChapters[manga.hid] = latestChapters;
+            continue;
+          }
+
+          // Compare with saved chapters
+          const savedChapters = mangaChapters[manga.hid];
+          const newChapters = latestChapters.filter(chapter => 
+            !savedChapters.some(saved => saved.hid === chapter.hid)
+          );
+
+          if (newChapters.length > 0) {
+            newUpdates.push({
+              manga: {
+                ...manga,
+                cover: manga.image // Ensure cover is available
+              },
+              newChapters,
+              timestamp: new Date().toISOString()
+            });
+          }
+
+          // Update saved chapters
           mangaChapters[manga.hid] = latestChapters;
-          continue;
+        } catch (error) {
+          console.error(`Error checking updates for ${manga.title}:`, error);
         }
-
-        // Compare with saved chapters
-        const savedChapters = mangaChapters[manga.hid];
-        const newChapters = latestChapters.filter(chapter => 
-          !savedChapters.some(saved => saved.hid === chapter.hid)
-        );
-
-        if (newChapters.length > 0) {
-          newUpdates.push({
-            manga,
-            newChapters,
-            timestamp: new Date().toISOString()
-          });
-        }
-
-        // Update saved chapters
-        mangaChapters[manga.hid] = latestChapters;
       }
 
       // Save updated chapter data
       await AsyncStorage.setItem('mangaChapters', JSON.stringify(mangaChapters));
 
-      // Update the updates list
-      if (newUpdates.length > 0) {
-        const combinedUpdates = [...newUpdates, ...updates];
-        await AsyncStorage.setItem('updates', JSON.stringify(combinedUpdates));
-        setUpdates(combinedUpdates);
-      }
-
-      // Save last check time
-      const now = new Date().toISOString();
-      await AsyncStorage.setItem('lastUpdateCheck', JSON.stringify(now));
-      setLastChecked(new Date(now));
-
-      Alert.alert(
-        'Update Check Complete',
-        `Found ${newUpdates.length} manga with new chapters`
-      );
+      // Sort updates by timestamp
+      newUpdates.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      setUpdates(newUpdates);
     } catch (error) {
-      console.error('Error checking updates:', error);
-      Alert.alert('Error', 'Failed to check for updates');
+      console.error('Error checking for updates:', error);
+      Alert.alert('Error', 'Failed to check for updates. Please try again.');
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    checkForUpdates();
+  }, []);
+
+  const handleChapterPress = async (manga, chapter) => {
+    try {
+      // Add to history
+      const existingHistory = await AsyncStorage.getItem('history');
+      const history = existingHistory ? JSON.parse(existingHistory) : [];
+
+      const historyEntry = {
+        manga: {
+          ...manga,
+          cover: manga.image
+        },
+        chapter: {
+          ...chapter,
+          extension: manga.extension
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      // Remove any existing entries for the same manga
+      const filteredHistory = history.filter(
+        entry => entry.manga.hid !== manga.hid
+      );
+
+      // Add new entry at the beginning
+      filteredHistory.unshift(historyEntry);
+
+      // Keep only the last 100 entries
+      const trimmedHistory = filteredHistory.slice(0, 100);
+
+      // Save updated history
+      await AsyncStorage.setItem('history', JSON.stringify(trimmedHistory));
+
+      // Navigate to read screen
+      navigation.navigate('Read', {
+        chapter: {
+          ...chapter,
+          extension: manga.extension
+        },
+        manga: {
+          ...manga,
+          extension: manga.extension
+        }
+      });
+    } catch (error) {
+      console.error('Error handling chapter press:', error);
     }
   };
 
@@ -136,10 +152,7 @@ const UpdatesScreen = ({ navigation }) => {
             <TouchableOpacity
               key={chapter.hid}
               style={styles.chapterButton}
-              onPress={() => navigation.navigate('Read', { 
-                chapter,
-                manga: item.manga
-              })}
+              onPress={() => handleChapterPress(item.manga, chapter)}
             >
               <Text style={styles.chapterText}>
                 Chapter {chapter.chap}
@@ -172,11 +185,6 @@ const UpdatesScreen = ({ navigation }) => {
     <Layout>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Updates</Text>
-        {lastChecked && (
-          <Text style={styles.headerSubtitle}>
-            Last checked: {lastChecked.toLocaleDateString()}
-          </Text>
-        )}
       </View>
       <FlatList
         data={updates}
@@ -214,11 +222,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.text.primary,
     marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    marginBottom: 8,
   },
   list: {
     padding: 16,

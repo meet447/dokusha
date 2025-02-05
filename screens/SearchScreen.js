@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { searchManga } from '../api/comick';
+import { searchManga } from '../api/manga';
 import Layout from '../components/Layout';
 import OptimizedImage from '../components/OptimizedImage';
 import { theme } from '../constants/theme';
